@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>JAPAbc</title>
+        <script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
+        <script>
+            var username;
+            var lasttime = 0;
+            
+            function poll(){
+                $.ajax({
+                    method: "POST",
+                    url: "chat.php?command=chatloop",
+                    complete: poll
+                }).success(function(msg){
+                    var result = JSON.parse(msg) || [[-1]];
+                    for(var i = 0; i < result.length; i++) {
+                        var conditionsMet = false;
+                        if (result[i][0] > lasttime) {
+                            conditionsMet = true;
+                        } else if (result.length > i+1) {
+                            conditionsMet = (result[i][1] != result[i+1][1] && result[i+1][0] - result[i][0] <= 1);
+                        }
+                        if (conditionsMet) {
+                            console.log(result[i][3]);
+                            var msgDOM = document.createElement("p");
+                            var timeDOM = document.createElement("span");
+                            var nickDOM = document.createElement("span");
+                            var textDOM = document.createElement("span");
+                            msgDOM.appendChild(timeDOM);
+                            msgDOM.appendChild(nickDOM);
+                            msgDOM.appendChild(textDOM);
+                            timeDOM.setAttribute("style", "color: gray");
+                            nickDOM.setAttribute("style", "color: " + result[i][2]);
+                            var date = new Date(result[i][0]*1000);
+                            var hoursString, minutesString, secondsString;
+                            if (date.getHours() < 10) {
+                                hoursString = "0" + date.getHours();
+                            } else {
+                                hoursString = date.getHours();
+                            }
+                            if (date.getMinutes() < 10) {
+                                minutesString = "0" + date.getMinutes();
+                            } else {
+                                minutesString = date.getMinutes();
+                            }
+                            if (date.getSeconds() < 10) {
+                                secondsString = "0" + date.getSeconds();
+                            } else {
+                                secondsString = date.getSeconds();
+                            }
+                            timeDOM.innerHTML = "["+hoursString+":"+minutesString+":"+secondsString+"]";
+                            nickDOM.innerHTML = result[i][1];
+                            textDOM.innerHTML = "<font color=\"gray\">: </font>" + result[i][3];
+                            document.getElementById("chatbox").appendChild(msgDOM);
+                            lasttime = result[i][0];
+                        }
+                    }
+                });
+            }
+            
+            function getUserName() {
+                $.ajax({
+                    method: "POST",
+                    url: "chat.php?command=getuser"
+                }).success(function(msg){
+                    username = JSON.parse(msg)[0];
+                    console.log(username);
+                    if (username == null) {
+                        while(username == null || username == '') {
+                            username = prompt("Enter new login");
+                        }
+                        $.ajax({
+                            method: "POST",
+                            url: "chat.php?command=setuser",
+                            data: "login="+username
+                        });
+                    }
+                });
+            }
+            
+            function sendMessage(msg) {
+                $.ajax({
+                    method: "POST",
+                    url: "chat.php?command=newmsg",
+                    data: "msg="+msg
+                });
+                $("#msgbox").val("");
+            }
+            
+            $(document).ready(function(){
+                getUserName();
+                $("#send").click(function(){
+                    sendMessage($("#msgbox").val());
+                });
+                $("#logout").click(function(){
+                    $.ajax({
+                        method: "POST",
+                        url: "chat.php?command=logout"
+                    }).success(function(){
+                        location.reload();
+                    });
+                });
+                poll();
+            });
+        </script>
+        <style>
+            body {
+                margin: 0 0;
+                position: fixed;
+                overflow: hidden;
+                width: 100%;
+                height: 100%;
+                font-family: arial;
+                font-size: 9pt;
+                text-align: center;
+            }
+            
+            #chatbox {
+                width: 95%;
+                height: 90%;
+                border: solid 1px black;
+                margin: 0 auto;
+                text-align: left;
+                overflow: scroll;
+            }
+            
+            #form1 {
+                display: inline-block;
+                width: 95%;
+                margin: 0 auto;
+            }
+            
+            #logout {
+                display: inline-block;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="chatbox"></div>
+        <form action="#" id="form1"><input type="text" id="msgbox" autocomplete="off" /><button id="send">Send</button></form>
+        <a href="#" id="logout">Logout</a>
+    </body>
+</html>
