@@ -54,12 +54,16 @@
                             nickDOM.innerHTML = result[i][1];
                             textDOM.innerHTML = "<font color=\"gray\">: </font>" + result[i][3];
                             document.getElementById("chatbox").appendChild(msgDOM);
+                            scroltoend();
                             lasttime = result[i][0];
                         }
                     }
                 });
             }
-            
+              function scrolltoend(){
+			   $('#chatbox').animate({
+               scrollTop: $('#chatbox')[0].scrollHeight}, 2000);
+			}
             function getUserName() {
                 $.ajax({
                     method: "POST",
